@@ -28,7 +28,7 @@ jobs:
         run: |
           apt-get update
           # ca-certificates 用于 Release 上传时的 HTTPS 通信
-          apt-get install -y build-essential ca-certificates tar gzip
+          apt-get install -y build-essential ca-certificates tar gzip procps
 
       - name: Build
         run: |
