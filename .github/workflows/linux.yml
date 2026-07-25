@@ -34,6 +34,7 @@ jobs:
         run: |
           ./configure
           make
+          strip abduco
 
       - name: Test
         shell: bash
