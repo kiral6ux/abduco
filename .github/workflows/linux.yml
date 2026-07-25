@@ -1,24 +1,71 @@
-name: Debian11
+name: Debian 11 Build & Release
 
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '手动指定发布的版本号 (例如 v1.8.7)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os:
-          - ubantu-20.24
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
+    container:
+      image: debian:11
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Checkout
-      uses: actions/checkout@v5
+      - name: Install dependencies
+        run: |
+          apt-get update
+          # ca-certificates 用于 Release 上传时的 HTTPS 通信
+          apt-get install -y build-essential ca-certificates tar gzip
 
-    - name: Build
-      run: |
-        ./configure
-        make
+      - name: Build
+        run: |
+          ./configure
+          make
 
-    - name: Test
-      run: |
-        ./testsuite.sh
+      - name: Test
+        run: |
+          ./testsuite.sh
+
+      - name: Package Artifact
+        run: |
+          VERSION="${{ inputs.version || github.ref_name }}"
+          tar -czvf "abduco-${VERSION}-linux-amd64.tar.gz" abduco
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-package
+          path: abduco-*-linux-amd64.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download binary package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: binary-package
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.SYNC_T }}
+          # 如果是手动触发且输入了 version 则用 inputs.version，否则自动获取 Git Tag
+          tag_name: ${{ inputs.version || github.ref_name }}
+          files: |
+            abduco${{ inputs.version || github.ref_name }}-linux-amd64.tar.gz
+          generate_release_notes: true # 自动生成 Release 改动日志
+          
