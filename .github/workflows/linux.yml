@@ -39,8 +39,8 @@ jobs:
         env:
           TERM: xterm
         run: |
-          # 移除 testsuite.sh 中会导致 CI 竞争误判的 pgrep 检查
-          sed -i '/pgrep abduco && echo Abduco process exists/d' testsuite.sh
+          # 在 testsuite.sh 的 pgrep abduco 前面插入 sleep 1
+          sed -i '/pgrep abduco/i \tsleep 1' testsuite.sh
           
           ./testsuite.sh
 
