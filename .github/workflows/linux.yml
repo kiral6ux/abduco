@@ -40,7 +40,7 @@ jobs:
           TERM: xterm
         run: |
          # 1. 在 check_environment 函数内部第一行加入 sleep 1，给进程优雅退出的时间
-          sed -i '/check_environment() {/a \tsleep 2' testsuite.sh
+          sed -i 's/check_environment() {/check_environment() { sleep 2;/' testsuite.sh
           
           # 2. 将有引号 Bug 的 awk 命令替换为通用的 seq 1 1000
           sed -i "s/awk 'BEGIN {for(i=1;i<=1000;i++) print i}'/seq 1 1000/g" testsuite.sh
