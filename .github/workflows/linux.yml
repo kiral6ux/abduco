@@ -28,7 +28,7 @@ jobs:
         run: |
           apt-get update
           # ca-certificates 用于 Release 上传时的 HTTPS 通信
-          apt-get install -y build-essential ca-certificates tar gzip procps
+          apt-get install -y build-essential ca-certificates tar gzip procps bash
 
       - name: Build
         run: |
@@ -39,13 +39,10 @@ jobs:
         env:
           TERM: xterm
         run: |
-         # 1. 在 check_environment 函数内部第一行加入 sleep 1，给进程优雅退出的时间
-          sed -i 's/check_environment() {/check_environment() { sleep 2;/' testsuite.sh
-          
-          # 2. 将有引号 Bug 的 awk 命令替换为通用的 seq 1 1000
+          # 1. 仅修正 testsuite.sh 中这行有引号传递 Bug 的测试用例（换成通用的 seq）
           sed -i "s/awk 'BEGIN {for(i=1;i<=1000;i++) print i}'/seq 1 1000/g" testsuite.sh
           
-          ./testsuite.sh
+          bash ./testsuite.sh
 
       - name: Package Artifact
         run: |
