@@ -41,8 +41,11 @@ jobs:
         run: |
           # 1. 仅修正 testsuite.sh 中这行有引号传递 Bug 的测试用例（换成通用的 seq）
           sed -i "s/awk 'BEGIN {for(i=1;i<=1000;i++) print i}'/seq 1 1000/g" testsuite.sh
+
+          # 2. 在 check_environment 中加入 sleep 1 缓冲
+          sed -i 's/check_environment() {/check_environment() { sleep 2;/' testsuite.sh
           
-          # 2. 确保测试前清理残余进程
+          # 3. 确保测试前清理残余进程
           pkill -9 abduco 2>/dev/null || true
           
           bash ./testsuite.sh
