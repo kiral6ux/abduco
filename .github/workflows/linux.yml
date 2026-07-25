@@ -36,6 +36,7 @@ jobs:
           make
 
       - name: Test
+        shell: bash
         env:
           TERM: xterm
         run: |
@@ -48,27 +49,35 @@ jobs:
           # 3. 确保测试前清理残余进程
           pkill -9 abduco 2>/dev/null || true
           
-          # bash ./testsuite.sh
+          # ./testsuite.sh
 
       - name: Package Artifact
         run: |
+          mkdir -p dist
           VERSION="${{ inputs.version || github.ref_name }}"
-          tar -czvf "abduco-${VERSION}-linux-amd64.tar.gz" abduco
+          tar -czvf "dist/abduco-${VERSION}-linux-amd64.tar.gz" abduco
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload binary package artifact
+        uses: actions/upload-artifact@v6
         with:
-          name: binary-package
-          path: abduco-*-linux-amd64.tar.gz
+          name: abduco_${{ inputs.version || github.ref_name }}-linux-${{ matrix.asset_arch }}
+          path: dist/abduco-*-linux-amd64.tar.gz
+          if-no-files-found: error
 
   release:
     needs: build
     runs-on: ubuntu-24.04
     steps:
       - name: Download binary package artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v6
         with:
-          name: binary-package
+          path: dist
+          
+      - name: Generate checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum *.tar.gz > checksums.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -77,6 +86,7 @@ jobs:
           # 如果是手动触发且输入了 version 则用 inputs.version，否则自动获取 Git Tag
           tag_name: ${{ inputs.version || github.ref_name }}
           files: |
-            abduco${{ inputs.version || github.ref_name }}-linux-amd64.tar.gz
+            dist/*.tar.gz
+            dist/checksums.txt
           generate_release_notes: true # 自动生成 Release 改动日志
           
